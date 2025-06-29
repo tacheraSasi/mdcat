@@ -96,7 +96,7 @@ fn main() {
                 args.filenames
                     .iter()
                     .try_fold(0, |code, filename| {
-                        process_file(filename, &settings, &resource_handler, &mut output)
+                        process_file(filename, &settings, &resource_handler, &mut output, args.line_numbers, args.stats)
                             .map(|_| code)
                             .or_else(|error| {
                                 eprintln!("Error: {filename}: {error}");

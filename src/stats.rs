@@ -58,10 +58,10 @@ impl DocumentStats {
                 Event::Start(pulldown_cmark::Tag::CodeBlock(_)) => {
                     stats.code_block_count += 1;
                 }
-                Event::Start(pulldown_cmark::Tag::Link(_, _, _)) => {
+                Event::Start(pulldown_cmark::Tag::Link { .. }) => {
                     stats.link_count += 1;
                 }
-                Event::Start(pulldown_cmark::Tag::Image(_, _, _)) => {
+                Event::Start(pulldown_cmark::Tag::Image { .. }) => {
                     stats.image_count += 1;
                 }
                 Event::Start(pulldown_cmark::Tag::List(_)) => {

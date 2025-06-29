@@ -36,6 +36,8 @@ pub mod args;
 pub mod output;
 /// Resource handling for mdca.
 pub mod resources;
+/// Statistics and line number handling for mdcat.
+pub mod stats;
 
 /// Default read size limit for resources.
 pub static DEFAULT_RESOURCE_READ_LIMIT: u64 = 104_857_600;
@@ -72,6 +74,8 @@ pub fn process_file(
     settings: &Settings,
     resource_handler: &dyn ResourceUrlHandler,
     output: &mut Output,
+    show_line_numbers: bool,
+    show_stats: bool,
 ) -> Result<()> {
     let (base_dir, input) = read_input(filename)?;
     event!(
@@ -79,6 +83,17 @@ pub fn process_file(
         "Read input, using {} as base directory",
         base_dir.display()
     );
+    
+    // Calculate statistics if requested
+    if show_stats {
+        let stats = stats::DocumentStats::from_markdown(&input);
+        writeln!(output.writer(), "{}", stats.format())?;
+        if !show_line_numbers {
+            // If only stats are requested, don't render the full document
+            return Ok(());
+        }
+    }
+    
     let parser = Parser::new_ext(
         &input,
         Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TABLES,
@@ -86,20 +101,54 @@ pub fn process_file(
     let env = Environment::for_local_directory(&base_dir)?;
 
     let mut sink = BufWriter::new(output.writer());
-    pulldown_cmark_mdcat::push_tty(settings, &env, resource_handler, &mut sink, parser)
-        .and_then(|_| {
-            event!(Level::TRACE, "Finished rendering, flushing output");
-            sink.flush()
-        })
-        .or_else(|error| {
-            if error.kind() == std::io::ErrorKind::BrokenPipe {
-                event!(Level::TRACE, "Ignoring broken pipe");
-                Ok(())
-            } else {
-                event!(Level::ERROR, ?error, "Failed to process file: {:#}", error);
-                Err(error)
-            }
-        })?;
+    
+    // If line numbers are enabled, we need to process the content differently
+    if show_line_numbers {
+        let total_lines = input.lines().count();
+        let line_number_width = total_lines.to_string().len();
+        
+        // Add line numbers to each line
+        let lines: Vec<String> = input.lines().enumerate().map(|(i, line)| {
+            format!("{:>width$} │ {}", i + 1, line, width = line_number_width)
+        }).collect();
+        
+        let numbered_input = lines.join("\n");
+        let parser = Parser::new_ext(
+            &numbered_input,
+            Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TABLES,
+        );
+        
+        pulldown_cmark_mdcat::push_tty(settings, &env, resource_handler, &mut sink, parser)
+            .and_then(|_| {
+                event!(Level::TRACE, "Finished rendering, flushing output");
+                sink.flush()
+            })
+            .or_else(|error| {
+                if error.kind() == std::io::ErrorKind::BrokenPipe {
+                    event!(Level::TRACE, "Ignoring broken pipe");
+                    Ok(())
+                } else {
+                    event!(Level::ERROR, ?error, "Failed to process file: {:#}", error);
+                    Err(error)
+                }
+            })?;
+    } else {
+        pulldown_cmark_mdcat::push_tty(settings, &env, resource_handler, &mut sink, parser)
+            .and_then(|_| {
+                event!(Level::TRACE, "Finished rendering, flushing output");
+                sink.flush()
+            })
+            .or_else(|error| {
+                if error.kind() == std::io::ErrorKind::BrokenPipe {
+                    event!(Level::TRACE, "Ignoring broken pipe");
+                    Ok(())
+                } else {
+                    event!(Level::ERROR, ?error, "Failed to process file: {:#}", error);
+                    Err(error)
+                }
+            })?;
+    }
+    
     Ok(())
 }
 
