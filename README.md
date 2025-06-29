@@ -29,7 +29,9 @@ Then it
 * nicely renders all basic CommonMark syntax,
 * highlights code blocks with [syntect],
 * shows [links][osc8], and also images inline in supported terminals (see above, where "Rust" is a clickable link!),
-* adds jump marks for headings in [iTerm2] (jump forwards and backwards with <key>⇧⌘↓</key> and <key>⇧⌘↑</key>).
+* adds jump marks for headings in [iTerm2] (jump forwards and backwards with <key>⇧⌘↓</key> and <key>⇧⌘↑</key>),
+* displays line numbers with `--line-numbers` for code review and debugging,
+* shows document statistics with `--stats` including word count, character count, and reading time estimates.
 
 | Terminal                   |  Basic syntax | Syntax highlighting | Images | Jump marks |
 | :------------------------- | :-----------: | :-----------------: | :----: | :--------: |
