@@ -107,6 +107,12 @@ pub struct CommonArgs {
     /// Skip terminal detection and only use ANSI formatting.
     #[arg(long = "ansi", conflicts_with = "no_colour")]
     pub ansi_only: bool,
+    /// Show line numbers in the output.
+    #[arg(long = "line-numbers")]
+    pub line_numbers: bool,
+    /// Display statistics about the document (word count, character count, etc.).
+    #[arg(long = "stats")]
+    pub stats: bool,
     /// Generate completions for a shell to standard output and exit.
     #[arg(long)]
     pub completions: Option<Shell>,
